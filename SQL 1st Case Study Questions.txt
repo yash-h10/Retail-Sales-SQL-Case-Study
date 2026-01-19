@@ -1,0 +1,19 @@
+Q1. Top 5 and Bottom 5 products according to sales?
+
+Q2. Customer Segmentation according to their no. of products purchased and transaction amount.
+
+Q3. Customer Churn Rate?
+
+Q4. Which Category has the highest and lowest stocks, and their respective sales
+
+Q5. Top 5 Category acc to no. of sales.
+
+Q6. Quarterly Sales Trend?
+
+Q7. MOM Sales Trend?
+
+Q8. Top 5 Category acc to Transaction Amount
+
+Q9. Top 5 Customers acc to average sales and Total transactions.
+
+Q10. Gender and Age Segmentation of Customers with respect to sales.

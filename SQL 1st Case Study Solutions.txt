@@ -1,0 +1,169 @@
+Q2:
+
+-- Customer Segmentation
+
+Select cp.CustomerID, sum(QuantityPurchased * st.Price) as Total_Transaction, sum(QuantityPurchased) as Total_Purchase,
+case when sum(QuantityPurchased * st.Price)>10000 then 'High'
+when sum(QuantityPurchased * st.Price)>5000 then 'Medium'
+when sum(QuantityPurchased * st.Price)<5000 then 'Low' end as Transaction_Category,
+case when sum(QuantityPurchased)>30 then 'High Value'
+when sum(QuantityPurchased)>10 then 'Mid'
+when sum(QuantityPurchased)>1 then 'Low' else 'No Order' end as Purchase_Category
+from customer_profiles cp 
+left join sales_transaction st on cp.CustomerID=st.CustomerID
+group by cp.CustomerID
+
+Q1:
+
+-- Top 5 Customer acc to no of qty purchased
+
+Select cp.*,sum(QuantityPurchased) as Total_Purchase
+from customer_profiles cp 
+join sales_transaction st on cp.CustomerID=st.CustomerID
+group by cp.CustomerID
+order by Total_Purchase desc
+limit 5
+
+-- Bottom 5 Customer acc to no of qty purchased
+
+Select cp.*,sum(QuantityPurchased) as Total_Purchase
+from customer_profiles cp 
+join sales_transaction st on cp.CustomerID=st.CustomerID
+group by cp.CustomerID
+order by Total_Purchase asc
+limit 5
+
+
+Q5:Top 5 Category acc to no. of sales.
+
+select pi.Category,sum(QuantityPurchased) as Total_Purchase
+from product_inventory pi 
+join sales_transaction st on pi.ProductID=st.ProductID
+group by Category
+order by Total_Purchase desc
+limit 5
+
+Q8:Top 5 Category acc to Transaction Amount
+
+select pi.Category,sum(QuantityPurchased * st.Price) as Total_Transaction
+from product_inventory pi 
+join sales_transaction st on pi.ProductID=st.ProductID
+group by Category
+order by Total_Transaction desc
+limit 5 
+
+Q9:Top 5 Customers acc to average sales and Total transactions.
+
+Select CustomerID, sum(QuantityPurchased * Price) as Total_Transaction,
+avg(QuantityPurchased * Price) as Avg_Transaction
+from sales_transaction
+group by CustomerID
+order by Total_Transaction
+limit 5
+
+# More Working on Question 2
+
+Create view as customer_segmentation
+Select cp.CustomerID, sum(QuantityPurchased * st.Price) as Total_Transaction, sum(QuantityPurchased) as Total_Purchase,
+case when sum(QuantityPurchased * st.Price)>10000 then 'High'
+when sum(QuantityPurchased * st.Price)>5000 then 'Medium'
+when sum(QuantityPurchased * st.Price)<5000 then 'Low' end as Transaction_Category,
+case when sum(QuantityPurchased)>30 then 'High Value'
+when sum(QuantityPurchased)>10 then 'Mid'
+when sum(QuantityPurchased)>1 then 'Low' else 'No Order' end as Purchase_Category
+from customer_profiles cp
+left join sales_transaction st on cp.CustomerID=st.CustomerID
+group by cp.CustomerID
+
+
+select 
+sum (case when Transaction_Category='High' and Purchase_Category='High Value' then 1 else 0 end) as 'Bulk Customers',
+sum (case when Transaction_Category='High' and Purchase_Category='Mid' then 1 else 0 end) as 'Upper Middle Class',
+sum (case when Transaction_Category='High' and Purchase_Category='Low' then 1 else 0 end) as 'Premium',
+sum (case when Transaction_Category='Medium' and Purchase_Category='High Value' then 1 else 0 end) as 'Mid Bulk Customers',
+sum (case when Transaction_Category='Medium' and Purchase_Category='Mid' then 1 else 0 end) as 'Moderate Middle Class',
+sum (case when Transaction_Category='Medium' and Purchase_Category='Low' then 1 else 0 end) as 'Mid Premium',
+sum (case when Transaction_Category='Low' and Purchase_Category='High Value' then 1 else 0 end) as 'Sale Bulk Customers',
+sum (case when Transaction_Category='Low' and Purchase_Category='Mid' then 1 else 0 end) as 'Lower Middle Class',
+sum (case when Transaction_Category='Low' and Purchase_Category='Low' then 1 else 0 end) as 'Cheap Customers',
+from customer_segmentation
+
+
+Q4:Which Category has the highest and lowest stocks, and their respective sales?
+
+#Highest Stock
+
+select pi.Category,pi.StockLevel,sum(st.Price*st.QuantityPurchased) as Total_Transaction_Amount 
+from product_inventory pi 
+join sales_transaction st on pi.ProductID=st.ProductID
+group by pi.Category
+order by pi.StockLevel desc
+limit 1
+
+#Lowest Stock
+
+select pi.Category,pi.StockLevel,sum(st.Price*st.QuantityPurchased) as Total_Transaction_Amount 
+from product_inventory pi 
+join sales_transaction st on pi.ProductID=st.ProductID
+group by pi.Category
+order by pi.StockLevel
+limit 1
+
+
+Q6:Quarterly Sales Trend?
+
+select concat('Q',quarter(st.TransactionDate)) as 'Quarter' ,year(st.TransactionDate) as 'Year' ,sum(st.QuantityPurchased*st.Price) as Total_Transaction_Amount 
+from sales_transaction st
+group by Quarter, Year
+order by Year, Quarter
+
+Q7. MOM Sales Trend?
+
+with Monthly_Sales as (
+	select date_format(TransactionDate,'%m%Y-01') as 'Month',sum(st.QuantityPurchased*st.Price) as current_monthly_sales_amount
+from sales_transaction st
+group by Month),
+Prev_Monthly_Sales as(
+	select Month, current_monthly_sales_amount, lag(current_monthly_sales_amount) over (partition by Month) as prev_month_sales,
+from Monthly_Sales)
+
+select Month, current_monthly_sales_amount, prev_month_sales, round(((current_monthly_sales_amount - prev_month_sales)/prev_month_sales)*100,2) as MOM
+from Prev_Monthly_Sales
+order by Month
+
+
+Q10. Gender and Age Segmentation of Customers with respect to sales.
+
+select cp.Gender,
+case sum (when cp.Age>=60 then (st.QuantityPurchased * st.Price) else 0) end as 'Senior Citizens',
+case sum (when cp.Age between 59 and 18 then (st.QuantityPurchased * st.Price) else 0) end as 'Adults',
+case sum (when cp.Age<18 then (st.QuantityPurchased * st.Price) else 0) end as 'Teenagers'
+from customer_profile cp 
+join sales_transaction st on cp.CustomerID = st.CustomerID
+group by cp.Gender
+	
+
+Q3. Inactive Customers
+
+select CustomerID, Age, Gender, Location
+from Customer_Profile
+where CustomerID not in (select distinct CustomerID from sales_transaction)
+
+
+Q11: No. transactions monthly wise
+
+select date_format(TransactionDate,'%m%Y-01') as 'Month', count(*) as 'No of Transactions'
+from sales_transaction
+group by Month
+
+
+
+
+
+
+
+
+
+
+
+
